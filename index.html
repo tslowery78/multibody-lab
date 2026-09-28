@@ -111,15 +111,34 @@
 
   /* ---- slideshow chrome ---- */
   .topbar{
-    padding:14px 24px;
+    padding:10px 24px;
     border-bottom:1px solid var(--border);
     display:flex;
-    align-items:baseline;
-    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
     flex-shrink:0;
+    flex-wrap:wrap;
+    row-gap:8px;
   }
-  .topbar .brand{font-weight:800;font-size:15px}
-  .topbar .tag{color:var(--muted);font-size:13px}
+  .topbar .brandwrap{display:flex;align-items:baseline;gap:12px;min-width:0}
+  .topbar .brand{font-weight:800;font-size:15px;white-space:nowrap}
+  .topbar .tag{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topcalc{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:6px 10px;
+  }
+  .topcalc .tc-label{font-size:11px;color:var(--muted)}
+  .topcalc input{
+    width:46px;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:4px 6px;font-size:14px;text-align:center;
+  }
+  .topcalc .tc-formula{font-size:13px;color:var(--muted);white-space:nowrap}
+  .topcalc .tc-result{font-weight:800;font-size:15px;white-space:nowrap}
+  .topcalc .tc-result.pos{color:var(--good)}
+  .topcalc .tc-result.zero{color:var(--accent2)}
+  .topcalc .tc-result.neg{color:var(--bad)}
   .viewport{flex:1;min-height:0;position:relative}
   .slide{
     position:absolute;inset:0;
@@ -180,8 +199,17 @@
 <body>
 
 <div class="topbar">
-  <span class="brand">multibody-lab</span>
-  <span class="tag">Grübler's equation — counting the DOF of a mechanism</span>
+  <div class="brandwrap">
+    <span class="brand">multibody-lab</span>
+    <span class="tag">Grübler's equation — counting the DOF of a mechanism</span>
+  </div>
+  <div class="topcalc">
+    <span class="tc-label">L</span><input type="number" id="in-l" min="1" value="4">
+    <span class="tc-label">J1</span><input type="number" id="in-j1" min="0" value="4">
+    <span class="tc-label">J2</span><input type="number" id="in-j2" min="0" value="0">
+    <span class="tc-formula">M = 3(L&minus;1) &minus; 2J1 &minus; J2</span>
+    <span class="tc-result" id="calc-out">= 1</span>
+  </div>
 </div>
 
 <div class="viewport" id="viewport">
@@ -310,27 +338,20 @@
       <div class="slide-text">
         <div class="kicker">05</div>
         <h2>Try it — planar mobility calculator</h2>
-        <p>Punch in your own link and joint counts, or load a preset. Watch M flip sign: 0 is a
-          rigid structure (a truss), negative means overconstrained (redundant members), positive
-          means it moves with that many independent inputs.</p>
+        <p>The calculator is pinned at the top of the page — edit L, J1, J2 there any time, from any
+          slide. Watch M flip sign: 0 is a rigid structure (a truss), negative means overconstrained
+          (redundant members), positive means it moves with that many independent inputs.</p>
       </div>
       <div class="slide-graphic">
         <div class="panel">
+          <p style="color:var(--muted);font-size:14px;margin:0 0 12px">Or load a preset — it updates
+            the calculator at the top:</p>
           <div class="presets">
             <button class="ctl preset" data-l="4" data-j1="4" data-j2="0">Four-bar</button>
             <button class="ctl preset" data-l="5" data-j1="5" data-j2="0">Five-bar</button>
             <button class="ctl preset" data-l="6" data-j1="7" data-j2="0">Watt six-bar</button>
             <button class="ctl preset" data-l="3" data-j1="3" data-j2="0">Triangle truss</button>
             <button class="ctl preset" data-l="3" data-j1="2" data-j2="1">Cam &amp; follower</button>
-          </div>
-          <div class="calc-row">
-            <div class="field"><label for="in-l">Links, L</label><input type="number" id="in-l" min="1" value="4"></div>
-            <div class="field"><label for="in-j1">Full joints, J1</label><input type="number" id="in-j1" min="0" value="4"></div>
-            <div class="field"><label for="in-j2">Half joints, J2</label><input type="number" id="in-j2" min="0" value="0"></div>
-          </div>
-          <div class="result">
-            <span>M = 3(L&minus;1) &minus; 2J<sub>1</sub> &minus; J<sub>2</sub></span>
-            <span class="m" id="calc-out">= 1</span>
           </div>
           <div class="note" id="calc-note"></div>
         </div>
@@ -553,7 +574,7 @@
       const L = +inL.value || 0, J1 = +inJ1.value || 0, J2 = +inJ2.value || 0;
       const M = 3*(L-1) - 2*J1 - J2;
       out.textContent = "= " + M;
-      out.className = "m " + (M > 0 ? "pos" : M === 0 ? "zero" : "neg");
+      out.className = "tc-result " + (M > 0 ? "pos" : M === 0 ? "zero" : "neg");
       if (M > 1) note.innerHTML = "<b>M = " + M + ":</b> needs " + M + " independent inputs to fully determine the configuration.";
       else if (M === 1) note.innerHTML = "<b>M = 1:</b> one input fully determines every link's position.";
       else if (M === 0) note.innerHTML = "<b>M = 0:</b> a statically determinate structure — no motion, no redundant members.";
