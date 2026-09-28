@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grübler's Equation — Counting the DOF of a Mechanism</title>
+<meta name="description" content="An interactive, animated explanation of the Grübler–Kutzbach mobility criterion used to count degrees of freedom in mechanisms and multi-body systems.">
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel2:#1e222b;
+    --text:#e7e9ee;
+    --muted:#9aa2b1;
+    --accent:#5ecbf5;
+    --accent2:#f5a45e;
+    --link-color:#5ecbf5;
+    --ground:#4a5266;
+    --joint:#f5a45e;
+    --good:#7ee08a;
+    --bad:#f56e6e;
+    --border:#2a2f3a;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+  header.hero{
+    padding:64px 20px 40px;
+    text-align:center;
+    background:radial-gradient(ellipse at top, #1b2130 0%, var(--bg) 65%);
+    border-bottom:1px solid var(--border);
+  }
+  header.hero h1{
+    font-size:clamp(28px,5vw,44px);
+    margin:0 0 12px;
+    letter-spacing:-0.02em;
+  }
+  header.hero p.tag{
+    color:var(--muted);
+    font-size:18px;
+    max-width:640px;
+    margin:0 auto;
+  }
+  header.hero .formula{
+    margin-top:28px;
+    font-size:clamp(20px,4vw,30px);
+    font-family:"Cambria Math","STIX Two Math",Georgia,serif;
+    color:var(--accent);
+  }
+  section{padding:56px 0;border-bottom:1px solid var(--border)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:24px;margin:0 0 6px}
+  h2 .num{color:var(--muted);font-weight:600;margin-right:8px}
+  .sub{color:var(--muted);margin:0 0 24px;max-width:640px}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr}}
+  svg{display:block;width:100%;max-height:340px;height:auto;background:var(--panel2);border-radius:10px}
+  .stage{background:var(--panel2);border-radius:10px;padding:12px}
+  .readout{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;
+  }
+  .badge{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .badge b{color:var(--text)}
+  .badge.dof{border-color:var(--accent);color:var(--accent);font-weight:700}
+  .controls{margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .controls label{font-size:14px;color:var(--muted)}
+  button{
+    background:var(--panel2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  button:hover{border-color:var(--accent)}
+  button.active{border-color:var(--accent);color:var(--accent)}
+  .calc-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:120px}
+  .field label{font-size:13px;color:var(--muted)}
+  .field input{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:16px;
+    width:100%;
+  }
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .result{
+    font-size:22px;
+    padding:16px 20px;
+    border-radius:10px;
+    background:var(--panel2);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .result .m{font-weight:800}
+  .result .m.pos{color:var(--good)}
+  .result .m.zero{color:var(--accent2)}
+  .result .m.neg{color:var(--bad)}
+  .note{
+    border-left:3px solid var(--accent2);
+    background:rgba(245,164,94,0.08);
+    padding:14px 16px;
+    border-radius:0 8px 8px 0;
+    font-size:15px;
+    color:var(--text);
+    margin-top:18px;
+  }
+  .note b{color:var(--accent2)}
+  table.legend{border-collapse:collapse;width:100%;font-size:14px;margin-top:14px}
+  table.legend th,table.legend td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
+  table.legend th{color:var(--muted);font-weight:600}
+  code{background:var(--panel2);padding:2px 6px;border-radius:4px;font-size:0.92em}
+  footer{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px}
+  footer a{color:var(--accent)}
+  .kbd-hint{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>How many ways can this thing move?</h1>
+    <p class="tag">Grübler's equation (extended by Kutzbach) counts a mechanism's degrees of freedom
+      from nothing but a parts list — before you write a single equation of motion.</p>
+    <div class="formula">M&nbsp;=&nbsp;3(L&minus;1)&nbsp;&minus;&nbsp;2J<sub>1</sub>&nbsp;&minus;&nbsp;J<sub>2</sub></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="why">
+  <h2><span class="num">01</span>What it's for</h2>
+  <p class="sub">Before you build a stiffness matrix or run Adams, you want one number: how many
+    independent inputs does this linkage need before its configuration is fully determined?
+    That number is the <b>mobility</b>, M — also called the degrees of freedom, DOF.</p>
+  <p>Grübler's insight (1917, generalized by Kutzbach in 1929) is that you don't need the geometry
+    to get M — just a count of rigid bodies and how they're connected. Free-floating in a plane,
+    every rigid body has 3 DOF (x, y, rotation). Bolt it to the ground and it loses all 3. Pin two
+    bodies together with a revolute or prismatic joint and you remove 2 of the 3 relative DOF between
+    them, leaving 1. A joint that only removes 1 DOF (a cam-follower or roller contact, leaving 2 free)
+    is called a <b>half joint</b>.</p>
+</section>
+
+<section id="planar">
+  <h2><span class="num">02</span>The planar formula</h2>
+  <p class="sub">Ground counts as one of the links. <code>J1</code> = full joints (revolute, prismatic —
+    remove 2 DOF each). <code>J2</code> = half joints (rolling/sliding contact — remove 1 DOF each).</p>
+  <div class="panel">
+    <table class="legend">
+      <tr><th>Symbol</th><th>Meaning</th></tr>
+      <tr><td><code>L</code></td><td>number of links, including the fixed frame/ground</td></tr>
+      <tr><td><code>J1</code></td><td>number of 1-DOF-remaining ("full") joints — pin, slider</td></tr>
+      <tr><td><code>J2</code></td><td>number of 2-DOF-remaining ("half") joints — cam, roller</td></tr>
+      <tr><td><code>M</code></td><td>mobility — independent inputs needed to fix the configuration</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="fourbar">
+  <h2><span class="num">03</span>Watch it: the four-bar linkage</h2>
+  <p class="sub">4 links (including ground), 4 revolute joints, no half joints. Drag the crank or press play —
+    notice that one input angle (the crank) fixes every other link's position. That's M = 1 in action.</p>
+  <div class="panel">
+    <div class="stage">
+      <svg id="fourbar-svg" viewBox="0 0 440 320" width="440" height="320"></svg>
+    </div>
+    <div class="controls">
+      <button id="fourbar-toggle">Pause</button>
+      <label><input type="range" id="fourbar-slider" min="0" max="359" value="0" style="width:200px;vertical-align:middle"> drive angle</label>
+    </div>
+    <div class="readout">
+      <span class="badge">L = 4</span>
+      <span class="badge">J<sub>1</sub> = 4</span>
+      <span class="badge">J<sub>2</sub> = 0</span>
+      <span class="badge dof">M = 3(4&minus;1) &minus; 2(4) &minus; 0 = 1</span>
+    </div>
+  </div>
+</section>
+
+<section id="sliderc">
+  <h2><span class="num">04</span>Same count, different shape: slider-crank</h2>
+  <p class="sub">Swap the rocker for a block sliding in a straight channel. Still 4 links and 4 full joints
+    (3 revolute + 1 prismatic) — Grübler doesn't care that one "joint" is a slider instead of a pin.
+    Same M = 1. This is the mechanism inside every piston engine and reciprocating compressor.</p>
+  <div class="panel">
+    <div class="stage">
+      <svg id="slider-svg" viewBox="0 0 440 320" width="440" height="320"></svg>
+    </div>
+    <div class="controls">
+      <button id="slider-toggle">Pause</button>
+    </div>
+    <div class="readout">
+      <span class="badge">L = 4</span>
+      <span class="badge">J<sub>1</sub> = 4 (3 pin + 1 slider)</span>
+      <span class="badge">J<sub>2</sub> = 0</span>
+      <span class="badge dof">M = 3(4&minus;1) &minus; 2(4) &minus; 0 = 1</span>
+    </div>
+  </div>
+</section>
+
+<section id="calc">
+  <h2><span class="num">05</span>Try it — planar mobility calculator</h2>
+  <p class="sub">Punch in your own link and joint counts, or load a preset. Watch M flip sign: 0 is a
+    rigid structure (a truss), negative means overconstrained (redundant members), positive means it
+    moves with that many independent inputs.</p>
+  <div class="panel">
+    <div class="presets">
+      <button class="preset" data-l="4" data-j1="4" data-j2="0">Four-bar</button>
+      <button class="preset" data-l="5" data-j1="5" data-j2="0">Five-bar</button>
+      <button class="preset" data-l="6" data-j1="7" data-j2="0">Watt six-bar</button>
+      <button class="preset" data-l="3" data-j1="3" data-j2="0">Triangle truss</button>
+      <button class="preset" data-l="3" data-j1="2" data-j2="1">Cam &amp; follower</button>
+    </div>
+    <div class="calc-row">
+      <div class="field"><label for="in-l">Links, L</label><input type="number" id="in-l" min="1" value="4"></div>
+      <div class="field"><label for="in-j1">Full joints, J1</label><input type="number" id="in-j1" min="0" value="4"></div>
+      <div class="field"><label for="in-j2">Half joints, J2</label><input type="number" id="in-j2" min="0" value="0"></div>
+    </div>
+    <div class="result">
+      <span>M = 3(L&minus;1) &minus; 2J<sub>1</sub> &minus; J<sub>2</sub></span>
+      <span class="m" id="calc-out">= 1</span>
+    </div>
+    <div class="note" id="calc-note"></div>
+  </div>
+</section>
+
+<section id="spatial">
+  <h2><span class="num">06</span>Going 3D: the general (Kutzbach) form</h2>
+  <p class="sub">In space, a free rigid body has 6 DOF, not 3. Every joint now removes <code>6&minus;f</code>
+    constraints, where <code>f</code> is however much relative motion that joint type still allows.</p>
+  <div class="formula" style="margin:8px 0 20px;text-align:left;font-size:24px">
+    M&nbsp;=&nbsp;6(L&minus;1)&nbsp;&minus;&nbsp;&Sigma;(6&nbsp;&minus;&nbsp;f<sub>i</sub>)
+  </div>
+  <div class="panel">
+    <table class="legend">
+      <tr><th>Joint</th><th>f (DOF it allows)</th><th>6&minus;f (constraints removed)</th></tr>
+      <tr><td>Revolute / prismatic</td><td>1</td><td>5</td></tr>
+      <tr><td>Cylindrical / universal</td><td>2</td><td>4</td></tr>
+      <tr><td>Spherical (ball joint) / planar</td><td>3</td><td>3</td></tr>
+    </table>
+    <p style="margin-top:16px">Set every joint to a revolute (f=1) and every body to a plane (drop
+      3 DOF/link and 3 constraints/joint instead of 6) and this collapses back to the planar formula
+      in §02 — it's the same idea, just fewer dimensions per body.</p>
+  </div>
+
+  <div class="note">
+    <b>Where it breaks:</b> both formulas assume every joint constraint is independent. Special
+    geometry can make constraints redundant, so the real mechanism moves even when the formula says
+    it's locked. The textbook case is <b>Bennett's linkage</b> — four links, four revolute joints in
+    space:
+    <div class="formula" style="font-size:18px;margin:10px 0">M = 6(4&minus;1) &minus; 5(4) = 18 &minus; 20 = &minus;2</div>
+    predicting an overconstrained structure. Built with Bennett's specific link-length and twist-angle
+    ratios, it is in fact a 1-DOF mechanism. The formula is a fast necessary check, not a proof —
+    it's the "order of magnitude" pass before you trust a mechanism (or a rover suspension linkage)
+    to move the way the parts count says it should.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Grübler (1917) / Kutzbach (1929) mobility criterion — reference derivation: Uicker, Pennock &amp; Shigley,
+  <i>Theory of Machines and Mechanisms</i>. Built by Tom Lowery.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- shared helpers ----------
+  function circleIntersect(p0, r0, p1, r1){
+    const dx = p1.x - p0.x, dy = p1.y - p0.y;
+    const d = Math.hypot(dx, dy);
+    if (d === 0 || d > r0 + r1 || d < Math.abs(r0 - r1)) return null;
+    const a = (r0*r0 - r1*r1 + d*d) / (2*d);
+    const h2 = r0*r0 - a*a;
+    const h = Math.sqrt(h2 > 0 ? h2 : 0);
+    const xm = p0.x + a*dx/d, ym = p0.y + a*dy/d;
+    const rx = -dy*(h/d), ry = dx*(h/d);
+    return [{x:xm+rx,y:ym+ry},{x:xm-rx,y:ym-ry}];
+  }
+  function closer(cands, prev){
+    if (!prev) return cands[0];
+    const d0 = Math.hypot(cands[0].x-prev.x, cands[0].y-prev.y);
+    const d1 = Math.hypot(cands[1].x-prev.x, cands[1].y-prev.y);
+    return d0 <= d1 ? cands[0] : cands[1];
+  }
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // ---------- four-bar linkage ----------
+  (function(){
+    const svg = document.getElementById("fourbar-svg");
+    const slider = document.getElementById("fourbar-slider");
+    const toggleBtn = document.getElementById("fourbar-toggle");
+
+    const O2 = {x:110, y:230};
+    const groundLen = 220, a = 60, b = 190, c = 150; // Grashof crank-rocker: a shortest, a+groundLen<=b+c
+    const O4 = {x:O2.x+groundLen, y:O2.y};
+
+    const ground = el("line", {x1:O2.x,y1:O2.y,x2:O4.x,y2:O4.y,stroke:"var(--ground)","stroke-width":4,"stroke-dasharray":"6 6"});
+    const crankLine = el("line", {stroke:"var(--link-color)","stroke-width":6,"stroke-linecap":"round"});
+    const coupLine = el("line", {stroke:"var(--link-color)","stroke-width":6,"stroke-linecap":"round"});
+    const rockLine = el("line", {stroke:"var(--link-color)","stroke-width":6,"stroke-linecap":"round"});
+    [ground, crankLine, coupLine, rockLine].forEach(n=>svg.appendChild(n));
+    [O2, O4].forEach(p=>{
+      svg.appendChild(el("circle",{cx:p.x,cy:p.y,r:7,fill:"var(--joint)"}));
+    });
+    const jointB = el("circle",{r:6,fill:"var(--joint)"});
+    const jointC = el("circle",{r:6,fill:"var(--joint)"});
+    svg.appendChild(jointB); svg.appendChild(jointC);
+
+    let theta = 0, playing = true, prevC = null;
+
+    function draw(){
+      const rad = theta * Math.PI/180;
+      const B = {x:O2.x + a*Math.cos(rad), y:O2.y + a*Math.sin(rad)};
+      const cands = circleIntersect(B, b, O4, c);
+      let C = cands ? closer(cands, prevC) : prevC;
+      if (C) prevC = C;
+      crankLine.setAttribute("x1",O2.x); crankLine.setAttribute("y1",O2.y);
+      crankLine.setAttribute("x2",B.x); crankLine.setAttribute("y2",B.y);
+      if (C){
+        coupLine.setAttribute("x1",B.x); coupLine.setAttribute("y1",B.y);
+        coupLine.setAttribute("x2",C.x); coupLine.setAttribute("y2",C.y);
+        rockLine.setAttribute("x1",O4.x); rockLine.setAttribute("y1",O4.y);
+        rockLine.setAttribute("x2",C.x); rockLine.setAttribute("y2",C.y);
+        jointC.setAttribute("cx",C.x); jointC.setAttribute("cy",C.y);
+      }
+      jointB.setAttribute("cx",B.x); jointB.setAttribute("cy",B.y);
+    }
+    draw();
+
+    slider.addEventListener("input", ()=>{ theta = +slider.value; playing = false; toggleBtn.textContent="Play"; draw(); });
+    toggleBtn.addEventListener("click", ()=>{
+      playing = !playing;
+      toggleBtn.textContent = playing ? "Pause" : "Play";
+    });
+    function tick(){
+      if (playing){
+        theta = (theta + 0.6) % 360;
+        slider.value = theta;
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // ---------- slider-crank ----------
+  (function(){
+    const svg = document.getElementById("slider-svg");
+    const toggleBtn = document.getElementById("slider-toggle");
+
+    const O2 = {x:90, y:200};
+    const a = 55, bRod = 170;
+    const sliderY = O2.y;
+
+    svg.appendChild(el("line",{x1:20,y1:sliderY,x2:420,y2:sliderY,stroke:"var(--ground)","stroke-width":3,"stroke-dasharray":"6 6"}));
+    svg.appendChild(el("circle",{cx:O2.x,cy:O2.y,r:7,fill:"var(--joint)"}));
+    const crankLine = el("line", {stroke:"var(--link-color)","stroke-width":6,"stroke-linecap":"round"});
+    const rodLine = el("line", {stroke:"var(--link-color)","stroke-width":6,"stroke-linecap":"round"});
+    const block = el("rect", {width:44,height:28,rx:4,fill:"var(--panel)",stroke:"var(--joint)","stroke-width":3});
+    const jointB = el("circle",{r:6,fill:"var(--joint)"});
+    [crankLine, rodLine, block, jointB].forEach(n=>svg.appendChild(n));
+
+    let theta = 0, playing = true;
+    function draw(){
+      const rad = theta*Math.PI/180;
+      const B = {x:O2.x+a*Math.cos(rad), y:O2.y+a*Math.sin(rad)};
+      const dy = B.y - sliderY;
+      const under = bRod*bRod - dy*dy;
+      const dx = Math.sqrt(under > 0 ? under : 0);
+      const Cx = B.x + dx;
+      crankLine.setAttribute("x1",O2.x); crankLine.setAttribute("y1",O2.y);
+      crankLine.setAttribute("x2",B.x); crankLine.setAttribute("y2",B.y);
+      rodLine.setAttribute("x1",B.x); rodLine.setAttribute("y1",B.y);
+      rodLine.setAttribute("x2",Cx); rodLine.setAttribute("y2",sliderY);
+      jointB.setAttribute("cx",B.x); jointB.setAttribute("cy",B.y);
+      block.setAttribute("x", Cx-22); block.setAttribute("y", sliderY-14);
+    }
+    draw();
+    toggleBtn.addEventListener("click", ()=>{ playing = !playing; toggleBtn.textContent = playing?"Pause":"Play"; });
+    function tick(){
+      if (playing){ theta = (theta+0.6)%360; draw(); }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // ---------- calculator ----------
+  (function(){
+    const inL = document.getElementById("in-l");
+    const inJ1 = document.getElementById("in-j1");
+    const inJ2 = document.getElementById("in-j2");
+    const out = document.getElementById("calc-out");
+    const note = document.getElementById("calc-note");
+
+    function compute(){
+      const L = +inL.value || 0, J1 = +inJ1.value || 0, J2 = +inJ2.value || 0;
+      const M = 3*(L-1) - 2*J1 - J2;
+      out.textContent = "= " + M;
+      out.className = "m " + (M > 0 ? "pos" : M === 0 ? "zero" : "neg");
+      if (M > 1) note.innerHTML = "<b>M = " + M + ":</b> needs " + M + " independent inputs (motors) to fully determine the configuration.";
+      else if (M === 1) note.innerHTML = "<b>M = 1:</b> one input (one motor, one actuator) fully determines every link's position.";
+      else if (M === 0) note.innerHTML = "<b>M = 0:</b> a statically determinate structure — no motion, no redundant members. A well-designed truss lands here.";
+      else note.innerHTML = "<b>M = " + M + " (overconstrained):</b> more constraints than DOF. Often still rigid, but only because members are redundant — misalignment can jam it or induce parasitic stress that this count can't see.";
+    }
+    [inL, inJ1, inJ2].forEach(i => i.addEventListener("input", compute));
+    document.querySelectorAll(".preset").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        inL.value = btn.dataset.l; inJ1.value = btn.dataset.j1; inJ2.value = btn.dataset.j2;
+        compute();
+      });
+    });
+    compute();
+  })();
+
+})();
+</script>
+
+</body>
+</html>
